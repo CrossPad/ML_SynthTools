@@ -92,11 +92,6 @@ float sampleDataFSawTest[SAMPLE_BUFFER_SIZE];
 #endif
 
 
-#ifndef I2S_OVERSAMPLE
-#define I2S_OVERSAMPLE  1
-#endif
-
-
 #ifdef SAMPLE_SIZE_32BIT
 union sampleTUNT
 {
@@ -432,7 +427,7 @@ i2s_config_t i2s_configuration =
 #else
     .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_TX),
 #endif
-    .sample_rate = SAMPLE_RATE * I2S_OVERSAMPLE,
+    .sample_rate = SAMPLE_RATE,
 #ifdef I2S_NODAC
     .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
     .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
@@ -503,7 +498,11 @@ i2s_pin_config_t pins =
 i2s_pin_config_t pins =
 {
 #ifdef ARDUINO_RUNNING_CORE
+#ifndef CONFIG_IDF_TARGET_ESP32S3
     .mck_io_num = I2S_PIN_NO_CHANGE,
+#else
+    .mck_io_num = I2S_MCLK_PIN,
+#endif
 #endif
     .bck_io_num = I2S_BCLK_PIN,
     .ws_io_num = I2S_WCLK_PIN,
@@ -529,8 +528,10 @@ void setup_i2s()
     i2s_set_sample_rates(i2s_port_number, SAMPLE_RATE);
     i2s_start(i2s_port_number);
 #ifdef ES8388_ENABLED
-    REG_WRITE(PIN_CTRL, 0xFFFFFFF0);
-    PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
+    #ifndef CONFIG_IDF_TARGET_ESP32S3
+        REG_WRITE(PIN_CTRL, 0xFFFFFFF0);
+        PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
+    #endif
 #endif
 #ifndef I2S_NODAC
     Serial.printf("I2S configured using following pins:\n");
